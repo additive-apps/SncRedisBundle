@@ -12,6 +12,7 @@
 namespace Snc\RedisBundle\Client\Predis\Connection;
 
 use Predis\Command\CommandInterface;
+use Predis\Connection\ConnectionException;
 use Predis\Connection\NodeConnectionInterface;
 use Predis\Response\Error;
 use Snc\RedisBundle\Logger\RedisLogger;
@@ -169,11 +170,20 @@ class ConnectionWrapper implements NodeConnectionInterface
     public function executeCommand(CommandInterface $command)
     {
         if (null === $this->logger) {
-            return $this->connection->executeCommand($command);
+            try {
+                return $this->connection->executeCommand($command);
+            } catch (ConnectionException $e) {
+                return false;
+            }
         }
 
         $startTime = microtime(true);
-        $result = $this->connection->executeCommand($command);
+
+        try {
+            return $this->connection->executeCommand($command);
+        } catch (ConnectionException $e) {
+            return false;
+        }
         $duration = (microtime(true) - $startTime) * 1000;
 
         $error = $result instanceof Error ? (string) $result : false;
